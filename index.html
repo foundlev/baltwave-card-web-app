@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport Card</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button id="reset">Сбросить данные</button>
+        </header>
+        <main id="main-content" class="hidden">
+            <div class="card">
+                <img src="assets/card.svg" alt="Transport Card">
+            </div>
+            <div class="balance" id="balance-container">
+                <p>Баланс: <span id="balance-amount">....₽</span></p>
+                <button id="refresh"><img src="assets/refresh.svg" alt="Refresh"></button>
+            </div>
+            <div class="top-up">
+                <input type="number" id="amount" value="200" autocomplete="off">
+                <button class="button-deposit" id="top-up"><img src="assets/wallet.svg" alt="Wallet"> Пополнить карту</button>
+            </div>
+            <div class="amount-buttons">
+                <button class="amount-btn">100₽</button>
+                <button class="amount-btn">200₽</button>
+                <button class="amount-btn">500₽</button>
+                <button class="amount-btn">800₽</button>
+                <button class="amount-btn">1000₽</button>
+            </div>
+        </main>
+        <main id="setup-content" class="hidden">
+            <div class="input-group">
+                <label for="proxy-password">Proxy password:</label>
+                <input type="password" id="proxy-password" value="" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="access-token">Access token:</label>
+                <input type="text" id="access-token" value="" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="refresh-token">Refresh token:</label>
+                <input type="text" id="refresh-token" value="" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="card-number">Номер карты:</label>
+                <input type="text" id="card-number" value="" autocomplete="off">
+            </div>
+            <button id="set-data" disabled><img src="assets/settings.svg" alt="Settings"> Установить данные</button>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

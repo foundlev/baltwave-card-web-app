@@ -1,0 +1,30 @@
+{
+  "name": "Quit Addiction App",
+  "short_name": "Quit App",
+  "start_url": "/quit-addiction-web-app/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4169E1",
+  "icons": [
+    {
+      "src": "assets/icons/image_64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/image_128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/image_256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/image_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

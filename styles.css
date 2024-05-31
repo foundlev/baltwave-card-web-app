@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&display=swap');
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Google Sans', sans-serif;
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+}
+
+header {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+}
+
+button#reset {
+    background: none;
+    border: none;
+    color: #555;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.card {
+    margin-top: 37.5px;
+}
+
+.card img {
+    width: 100%;
+    max-width: 400px;
+}
+
+.balance {
+    background: linear-gradient(to right, rgba(172, 175, 179, 0.4), rgba(76, 77, 220, 0.4));
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10.5px 0;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 32px;
+    color: #3E3E3E;
+}
+
+.balance p {
+    margin: 0;
+    font-weight: 400;
+    font-family: 'Google Sans', sans-serif;
+    color: #3E3E3E;
+}
+
+.balance #balance-amount {
+    font-weight: 700;
+    font-family: 'Google Sans', sans-serif;
+    color: #3E3E3E;
+}
+
+.balance button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+}
+
+.balance button img {
+    width: 32px;
+}
+
+.top-up {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10.5px 0 5.25px 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.top-up input {
+    width: 80px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #4C4DDC;
+    border-radius: 5px;
+    font-weight: 700;
+    box-sizing: border-box;
+    font-size: 22px;
+    height: 46px;
+    background-color: #F4F7FA;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.top-up button {
+    background: #4C4DDC;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: 'Google Sans', sans-serif;
+    box-sizing: border-box;
+    height: 46px;
+}
+
+.top-up button[disabled] {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.top-up button img {
+    margin-right: 10px;
+}
+
+.button-deposit {
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    width: 80%;
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.amount-buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 7px;
+    padding: 0;
+}
+
+.amount-btn {
+    background: #CEE7FF;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 400;
+    color: #3E3E3E;
+    flex: 1;
+    margin: 0 4px;
+    box-sizing: border-box;
+}
+
+.amount-btn:first-child {
+    margin-left: 0;
+}
+
+.amount-btn:last-child {
+    margin-right: 0;
+}
+
+button#set-data {
+    background: #4C4DDC;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 15px 30px;
+    font-size: 21px;
+    font-weight: 700;
+    font-family: 'Google Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+    min-width: 310px;
+    box-sizing: border-box;
+}
+
+button#set-data img {
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.hidden {
+    display: none;
+}
+
+.input-group {
+    margin-bottom: 10px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.input-group input {
+    width: 93%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 18px;
+    text-align: center;
+    background-color: #F4F7FA;
+}
+
+.input-group label {
+    text-align: left;
+    margin-left: 4px;
+}
+
+.rotating {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* Dark theme styles */
+@media (prefers-color-scheme: dark) {
+    html, body {
+        background-color: #1e1e1e;
+        color: #ffffff;
+    }
+
+    .card, .balance, #top-up, .amount-buttons, .input-group, #set-data {
+        opacity: 85%;
+    }
+
+    .container {
+        background-color: #1e1e1e;
+        color: #ffffff;
+    }
+
+    button#reset {
+        color: #bbbbbb;
+    }
+
+    .balance {
+        background: linear-gradient(to right, rgba(172, 175, 179, 0.2), rgba(76, 77, 220, 0.2));
+        color: #ffffff;
+    }
+
+    .balance p, .balance #balance-amount {
+        color: #ffffff;
+    }
+
+    .top-up input {
+        border: 1px solid #4C4DDC;
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+
+    .top-up button {
+        background: #4C4DDC;
+        color: #ffffff;
+    }
+
+    .amount-btn {
+        background: #3344cc;
+        color: #ffffff;
+    }
+
+    button#set-data {
+        background: #4C4DDC;
+        color: #ffffff;
+    }
+
+    .input-group input {
+        background-color: #2e2e2e;
+        color: #ffffff;
+        border: 1px solid #4C4DDC;
+    }
+}
