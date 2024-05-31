@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Check the response
             if (result.code === 1000 && result.redirect_url) {
                 // Open the redirect URL in a new window
-                window.open(result.redirect_url, '_blank');
+                window.open(result.redirect_url);
             } else {
                 // Show an alert message
                 alert('Не удалось создать ссылку на оплату. Проверьте пароль для прокси.');
