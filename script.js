@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardNumberInput = document.getElementById('card-number');
     const cardElement = document.querySelector('.card');
 
-    const proxyServerUrl = "http://myapihelper.na4u.ru/proxy.php"
+    const proxyServerUrl = "https://myapihelper.na4u.ru/proxy.php"
 
     // Handle mode switching
     if (startMode === 0) {
