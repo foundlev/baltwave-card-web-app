@@ -1,10 +1,9 @@
-let currentCard = null;
 let selectedAmount = null;
 let currentTab = 'trips';
 
 // Инициализация
 function init() {
-    const savedCard = localStorage.getItem('transportCard');
+    const savedCard = getCard();
     if(savedCard) {
         document.getElementById('cardNumber').value = savedCard;
         fetchCardData(savedCard);
@@ -43,14 +42,14 @@ function saveCard() {
     const cardNumber = document.getElementById('cardNumber').value;
     if(cardNumber.length < 8) return;
 
-    localStorage.setItem('transportCard', cardNumber);
+    setCard(cardNumber);
     toggleEditButton(true);
     fetchCardData(cardNumber, true);
 }
 
 // Обновление баланса
 async function refreshBalance(force = false) {
-    const cardNumber = localStorage.getItem('transportCard');
+    const cardNumber = getCard()
     if(!cardNumber) return;
 
     await fetchCardData(cardNumber, force);
@@ -102,39 +101,38 @@ async function processPayment() {
         return;
     }
 
-    try {
-        const response = await fetch('https://beneficiary-kd-api.icom24.ru/api/order/prepare/balance', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Origin': 'https://oplata.volna39.ru',
-                'Referer': 'https://oplata.volna39.ru/',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15'
-            },
-            body: JSON.stringify({
-                cardId: currentCard.cardId,
-                amountCent: amount
-            })
-        });
+    const response = await fetch('https://beneficiary-kd-api.icom24.ru/api/order/prepare/balance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Sec-Fetch-Site': 'cross-site',
+            'Accept-Language': 'ru',
+            'Sec-Fetch-Mode': 'cors',
+            'Origin': 'https://oplata.volna39.ru',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15',
+            'Referer': 'https://oplata.volna39.ru/',
+            'Sec-Fetch-Dest': 'empty',
+            'Priority': 'u=3, i',
+        },
+        body: JSON.stringify({
+            cardId: getCardId(),
+            amountCent: amount
+        })
+    });
 
-        if (!response.ok) throw new Error('Ошибка при создании заказа');
-
-        const paymentData = await response.json();
-        showPaymentModal(paymentData);
-        closeModal();
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
+    const paymentData = await response.json();
+    showPaymentModal(paymentData, amount);
+    closeModal();
 }
 
-function showPaymentModal(paymentData) {
+function showPaymentModal(paymentData, amountValue) {
     const modal = document.getElementById('paymentModal');
     const payButton = document.getElementById('payButton');
     const timerElement = document.getElementById('paymentTimer');
 
     // Устанавливаем данные оплаты
-    document.getElementById('paymentAmount').textContent = (paymentData.ttlMinutes * 60).amountCent / 100 + ' ₽';
+    document.getElementById('paymentAmount').textContent = `${Math.floor(amountValue / 100)} ₽`;
 
     // Таймер обратного отсчета
     let timeLeft = paymentData.ttlMinutes * 60;
@@ -147,7 +145,6 @@ function showPaymentModal(paymentData) {
         if (timeLeft <= 0) {
             clearInterval(timer);
             modal.style.display = 'none';
-            alert('Время на оплату истекло');
         }
     }, 1000);
 
@@ -176,6 +173,22 @@ function closeModal() {
     document.getElementById('customAmount').value = '';
     document.querySelectorAll('.amount-option').forEach(opt =>
         opt.classList.remove('selected'));
+}
+
+function setCard(card) {
+    localStorage.setItem('transportCard', card);
+}
+
+function getCard() {
+    return localStorage.getItem('transportCard');
+}
+
+function setCardId(cardId) {
+    localStorage.setItem('cardId', cardId);
+}
+
+function getCardId() {
+    return localStorage.getItem('cardId');
 }
 
 // API взаимодействие
@@ -219,6 +232,7 @@ async function fetchCardData(cardNumber, force = false) {
 
     renderHistory(data.tripHistory, 'tripsHistory', true);
     renderHistory(data.orderHistory, 'operationsHistory', false);
+    setCardId(data.cardId);
 
     return data;
     // } catch(error) {

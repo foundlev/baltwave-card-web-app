@@ -291,12 +291,16 @@ input:disabled {
 }
 
 .amount-option {
-    padding: 1.5rem 0.8rem;
+    padding: 1.0rem 0.5rem;
     border: 2px solid var(--border);
     border-radius: 12px;
     cursor: pointer;
     text-align: center;
     font-size: 0.9rem;
+}
+
+.modal-header {
+    font-size: 1.2rem;
 }
 
 .amount-option.selected {
