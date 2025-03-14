@@ -1,62 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaltWave App</title>
-    <link rel="icon" type="image/png" href="assets/icons/bus_512.png">
+    <title>Транспортная карта</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="assets/icons/bus_512.png">
 </head>
 <body>
     <div class="container">
-        <header>
-            <button id="reset">Сбросить данные</button>
-        </header>
-        <main id="main-content" class="hidden">
-            <div class="card">
-                <img src="assets/card.svg" alt="Transport Card">
+        <div class="card-input">
+            <i class="fas fa-credit-card"></i>
+            <label for="cardNumber"></label><input type="text"
+                                                 placeholder="Введите номер карты"
+                                                 id="cardNumber"
+                                                 inputmode="numeric"
+                                                 disabled>
+            <button class="edit-btn" id="editBtn">
+                <i class="fas fa-check"></i>
+            </button>
+        </div>
+
+        <div class="balance-card">
+            <div class="balance-header" id="BalanceHeader">
+                <div>
+                    <div class="balance-title">Текущий баланс</div>
+                    <div id="balanceAmount">–</div>
+                </div>
+                <button class="edit-btn" id="updateBalanceBtn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
             </div>
-            <div class="balance" id="balance-container">
-                <p>Баланс: <span id="balance-amount">....₽</span></p>
-                <button id="refresh"><img src="assets/refresh.svg" alt="Refresh"></button>
-            </div>
-            <div class="top-up">
-                <input type="number" id="amount" value="200" autocomplete="off">
-                <button class="button-deposit" id="top-up"><img src="assets/wallet.svg" alt="Wallet"> Пополнить карту</button>
-            </div>
-            <div class="amount-buttons">
-                <button class="amount-btn">100₽</button>
-                <button class="amount-btn">200₽</button>
-                <button class="amount-btn">500₽</button>
-                <button class="amount-btn">800₽</button>
-                <button class="amount-btn">1000₽</button>
-            </div>
-        </main>
-        <main id="setup-content" class="hidden">
-            <div class="input-group">
-                <label for="proxy-password">Proxy password:</label>
-                <input type="password" id="proxy-password" value="" autocomplete="off">
-            </div>
-            <div class="input-group">
-                <label for="access-token">Access token:</label>
-                <input type="text" id="access-token" value="" autocomplete="off">
-            </div>
-            <div class="input-group">
-                <label for="refresh-token">Refresh token:</label>
-                <input type="text" id="refresh-token" value="" autocomplete="off">
-            </div>
-            <div class="input-group">
-                <label for="card-number">Номер карты:</label>
-                <input type="text" id="card-number" value="" autocomplete="off">
-            </div>
-            <button id="set-data" disabled><img src="assets/settings.svg" alt="Settings"> Установить данные</button>
-        </main>
+        </div>
+
+        <button class="btn show-modal-btn" onclick="showTopUpModal()">
+            <i class="fas fa-plus-circle"></i>
+            Пополнить баланс
+        </button>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="trips" onclick="switchTab('trips')">
+                <i class="fas fa-bus"></i>
+                Поездки
+            </button>
+            <button class="tab" data-tab="operations" onclick="switchTab('operations')">
+                <i class="fas fa-exchange-alt"></i>
+                Операции
+            </button>
+        </div>
+
+        <div class="history-list active" id="tripsHistory">
+            <!-- Поездки будут здесь -->
+        </div>
+
+        <div class="history-list" id="operationsHistory">
+            <!-- Операции будут здесь -->
+        </div>
     </div>
+
+    <div class="modal" id="topUpModal">
+        <div class="modal-content">
+            <h2>Пополнение баланса</h2>
+            <div class="amount-grid">
+                <div class="amount-option" data-amount="10000" onclick="selectAmount(10000)">100 ₽</div>
+                <div class="amount-option" data-amount="20000" onclick="selectAmount(20000)">200 ₽</div>
+                <div class="amount-option" data-amount="50000" onclick="selectAmount(50000)">500 ₽</div>
+                <div class="amount-option" data-amount="80000" onclick="selectAmount(80000)">800 ₽</div>
+                <div class="amount-option" data-amount="100000" onclick="selectAmount(100000)">1000 ₽</div>
+                <div class="amount-option" data-amount="150000" onclick="selectAmount(150000)">1500 ₽</div>
+            </div>
+            <input type="number"
+                   id="customAmount"
+                   placeholder="Введите сумму"
+                   min="50"
+                   step="50"
+                   style="margin: 1rem 0; width: 100%; padding: 1rem;">
+            <button class="btn process-payment" onclick="processPayment()">
+                <i class="fas fa-check-circle"></i>
+                Подтвердить
+            </button>
+        </div>
+    </div>
+
+    <div class="modal" id="paymentModal">
+        <div class="modal-content">
+            <h2 style="text-align: center; margin-bottom: 1.5rem;">Оплата</h2>
+            <div id="paymentInfo">
+                <p>Сумма: <span id="paymentAmount"></span></p>
+                <p>Время на оплату: <span id="paymentTimer">10:00</span></p>
+            </div>
+            <button class="btn" id="payButton" style="margin-top: 1.5rem;">
+                <i class="fas fa-external-link-alt"></i>
+                Перейти к оплате
+            </button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

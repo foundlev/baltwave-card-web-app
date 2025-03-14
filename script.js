@@ -1,390 +1,259 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Determine startMode based on localStorage
-    const accessToken = localStorage.getItem('access-token');
-    const refreshToken = localStorage.getItem('refresh-token');
-    const cardNumber = localStorage.getItem('card-number');
-    const expiresIn = localStorage.getItem('expires-in');
-    const proxyPassword = localStorage.getItem('proxy-password');
-    const startMode = (accessToken && refreshToken && cardNumber && proxyPassword) ? 1 : 0;
+let currentCard = null;
+let selectedAmount = null;
+let currentTab = 'trips';
 
-    document.getElementById('proxy-password').value = proxyPassword;
-    document.getElementById('access-token').value = accessToken;
-    document.getElementById('refresh-token').value = refreshToken;
+// Инициализация
+function init() {
+    const savedCard = localStorage.getItem('transportCard');
+    if(savedCard) {
+        document.getElementById('cardNumber').value = savedCard;
+        fetchCardData(savedCard);
+        toggleEditButton(true);
+    }
+}
 
-    const resetButton = document.getElementById('reset');
-    const refreshButton = document.getElementById('refresh');
-    const balanceContainer = document.getElementById('balance-container');
-    const topUpButton = document.getElementById('top-up');
-    const amountInput = document.getElementById('amount');
-    const balanceAmount = document.getElementById('balance-amount');
-    const amountButtons = document.querySelectorAll('.amount-btn');
-    const mainContent = document.getElementById('main-content');
-    const setupContent = document.getElementById('setup-content');
-    const setDataButton = document.getElementById('set-data');
-    const proxyPasswordInput = document.getElementById('proxy-password');
-    const accessTokenInput = document.getElementById('access-token');
-    const refreshTokenInput = document.getElementById('refresh-token');
-    const cardNumberInput = document.getElementById('card-number');
-    const cardElement = document.querySelector('.card');
+// Переключение вкладок
+function switchTab(tab) {
+    if(tab === currentTab) return;
 
-    const proxyServerUrl = "https://myapihelper.na4u.ru/proxy.php"
+    document.querySelectorAll('.tab').forEach(t =>
+        t.classList.remove('active'));
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
 
-    // Handle mode switching
-    if (startMode === 0) {
-        mainContent.classList.add('hidden');
-        setupContent.classList.remove('hidden');
-        resetButton.classList.add('hidden');
-        setDataButton.style.display = 'flex';
-    } else {
-        mainContent.classList.remove('hidden');
-        setupContent.classList.add('hidden');
-        resetButton.classList.remove('hidden');
-        setDataButton.style.display = 'none';
+    document.querySelectorAll('.history-list').forEach(list =>
+        list.classList.remove('active'));
+    document.getElementById(`${tab}History`).classList.add('active');
+
+    currentTab = tab;
+}
+
+// Работа с картой
+function toggleEditButton(saved) {
+    const btn = document.getElementById('editBtn');
+    btn.innerHTML = saved ?
+        '<i class="fas fa-pencil-alt"></i>' :
+        '<i class="fas fa-check"></i>';
+
+    const input = document.getElementById('cardNumber');
+    input.disabled = saved;
+    if(!saved) input.focus();
+}
+
+function saveCard() {
+    const cardNumber = document.getElementById('cardNumber').value;
+    if(cardNumber.length < 8) return;
+
+    localStorage.setItem('transportCard', cardNumber);
+    toggleEditButton(true);
+    fetchCardData(cardNumber, true);
+}
+
+// Обновление баланса
+async function refreshBalance(force = false) {
+    const cardNumber = localStorage.getItem('transportCard');
+    if(!cardNumber) return;
+
+    await fetchCardData(cardNumber, force);
+}
+
+function formatDate(isoString) {
+    const date = new Date(isoString);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    return `${hours}:${minutes} ${day}:${month}:${year}`;
+}
+
+// История
+function renderHistory(items, containerId, isTrip) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = items.length ? items.map(item => `
+        <div class="history-item">
+            <div class="history-item-icon">
+                <i class="fas ${isTrip ? 'fa-bus' : 'fa-wallet'}"></i>
+            </div>
+            <div class="history-item-content">
+                <div class="history-item-title">
+                    ${isTrip ? item.vehicleTypeName + ' ' + item.routeNumber : item.orderTypeFriendlyName}
+                </div>
+                <div class="history-item-details">
+                    <span>${formatDate(item.dateTrip || item.datePurchase)}</span>
+                    ${isTrip ? `<!--<span>${item.vehicleGovNumber}</span>-->` : ''}
+                </div>
+            </div>
+            <div class="history-item-amount" style="color: ${isTrip ? 'var(--text)' : 'var(--success)'}">
+                ${isTrip ? '-' : '+'}${((item.totalAmountCent || item.amountCent) / 100).toFixed(0)} ₽
+            </div>
+        </div>
+    `).join('') : `<div class="history-item">Нет данных</div>`;
+}
+
+// Модальное окно
+function showTopUpModal() {
+    document.getElementById('topUpModal').style.display = 'flex';
+}
+
+async function processPayment() {
+    const amount = selectedAmount || document.getElementById('customAmount').value * 100;
+    if (!amount || amount < 5000) {
+        alert('Минимальная сумма 50 ₽!');
+        return;
     }
 
-    // Validate amount input and enable/disable top-up button
-    amountInput.addEventListener('input', () => {
-        const amount = parseInt(amountInput.value, 10);
-
-        // Restrict input to a maximum of 4 characters
-        if (amountInput.value.length > 4) {
-            amountInput.value = amountInput.value.slice(0, 4);
-        }
-
-        // Validate amount
-        if (amount >= 10 && amount <= 9999) {
-            topUpButton.disabled = false;
-            topUpButton.style.background = '#4C4DDC';
-            topUpButton.style.cursor = 'pointer';
-        } else {
-            topUpButton.disabled = true;
-            topUpButton.style.background = '#ccc';
-            topUpButton.style.cursor = 'not-allowed';
-        }
-    });
-
-    // Initial validation on page load
-    const initialAmount = parseInt(amountInput.value, 10);
-    if (initialAmount < 10 || initialAmount > 9999) {
-        topUpButton.disabled = true;
-        topUpButton.style.background = '#ccc';
-        topUpButton.style.cursor = 'not-allowed';
-    } else {
-        topUpButton.disabled = false;
-        topUpButton.style.background = '#4C4DDC';
-        topUpButton.style.cursor = 'pointer';
-    }
-
-    resetButton.addEventListener('click', () => {
-        if (confirm('Вы уверены, что хотите сбросить данные?')) {
-            // Erase data from localStorage
-            localStorage.removeItem('card-number');
-            localStorage.removeItem('expires-in');
-            localStorage.removeItem('last-balance');
-            localStorage.removeItem('last-balance-update');
-            // Reload the page
-            location.reload();
-        }
-    });
-
-    async function checkProxyPassword(proxyPassword) {
-        const proxyUrl = proxyServerUrl + "?proxypassword=" + proxyPassword;
-
-        try {
-            const response = await fetch(proxyUrl, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (error) {
-            return false;
-        }
-    }
-
-    // Function to update tokens
-    async function updateTokens(accessToken, refreshToken) {
-        const payload = {
-            "access-token": accessToken,
-            "refresh-token": refreshToken
-        };
-        let currentProxyPassword;
-        if (proxyPassword) {
-            currentProxyPassword = proxyPassword;
-        } else {
-            currentProxyPassword = localStorage.getItem('proxy-password');
-        }
-
-        const proxyUrl = proxyServerUrl + '?url=https://transport.nko-rr.ru/api/v1/user/refresh_user_token/&proxypassword=' + currentProxyPassword;
-
-        try {
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                const newAccessToken = result["access-token"];
-                const newRefreshToken = result["refresh-token"];
-                const expiresIn = parseInt(result["expires_in"] + Date.now() / 1000);
-
-                if (newAccessToken && newRefreshToken && expiresIn) {
-                    if (newAccessToken !== undefined && newRefreshToken !== undefined) {
-                        localStorage.setItem('access-token', newAccessToken);
-                        localStorage.setItem('refresh-token', newRefreshToken);
-                        localStorage.setItem('expires-in', expiresIn);
-                    }
-                }
-
-                return true;
-            } else {
-                return false;
-            }
-        } catch (error) {
-            return false;
-        }
-    }
-
-    function getTimestamp() {
-        return Math.floor(Date.now() / 1000);
-    }
-
-    // Function to get balance
-    async function getBalance() {
-        const currentAccessToken = localStorage.getItem('access-token');
-        const currentCardNumber = localStorage.getItem('card-number');
-        const proxyUrl = proxyServerUrl + "?url=https://transport.nko-rr.ru/api/v1/wallet/get_data/&proxypassword=" + proxyPassword;
-
-        const headers = {
-            "Content-Type": "application/json",
-            "Access-Token": currentAccessToken
-        };
-
-        const payload = {
-            "project_id": 77,
-            "surrogate_name": currentCardNumber
-        };
-
-        try {
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.balance) {
-                return result.balance;
-            } else {
-                return false;
-            }
-        } catch (error) {
-            return false;
-        }
-    }
-
-    async function refreshBalance() {
-        // Show loading state
-        balanceAmount.textContent = '...₽';
-        refreshButton.classList.add('rotating');
-
-        const expired = getTimestamp() > parseInt(localStorage.getItem('expires-in'));
-        let balance;
-
-        if (expired) {
-            const success = await updateTokens(localStorage.getItem('access-token'), localStorage.getItem('refresh-token'));
-
-            if (success) {
-                balance = await getBalance();
-            }
-        } else {
-            balance = await getBalance();
-
-            if (!balance) {
-                const success = await updateTokens(localStorage.getItem('access-token'), localStorage.getItem('refresh-token'));
-
-                if (success) {
-                    balance = await getBalance();
-                }
-            }
-        }
-
-        if (balance !== false) {
-            balanceAmount.textContent = balance + '₽';
-            localStorage.setItem('last-balance-update', getTimestamp());
-            localStorage.setItem('last-balance', balance);
-        } else if (balance === false && !expired) {
-            balanceAmount.textContent = 'Ошибка';
-            alert('Не удалось обновить баланс. Проверьте пароль для прокси или привязана ли карта.');
-        }
-
-        // Ensure the rotation completes before removing the class
-        setTimeout(() => {
-            refreshButton.classList.remove('rotating');
-        }, 1000);
-    }
-
-//    refreshButton.addEventListener('click', refreshBalance);
-    balanceContainer.addEventListener('click', refreshBalance);
-
-    topUpButton.addEventListener('click', async () => {
-        // Change button text to "..."
-        const originalText = topUpButton.innerHTML;
-        topUpButton.innerHTML = '...';
-
-        // Get the amount and card number
-        const amount = amountInput.value;
-        const cardNumber = localStorage.getItem('card-number');
-
-        // Prepare the data for the POST request
-        const data = {
-            credit_amount: amount,
-            wallet_surrogate: cardNumber
-        };
-
-        const proxyUrl = proxyServerUrl + "?url=https://transport.nko-rr.ru/api/v1/operations/credit_acquiring/&proxypassword=" + proxyPassword;
-
-        try {
-            // Make the POST request through the proxy server
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            // Check the response
-            if (result.code === 1000 && result.redirect_url) {
-                // Open the redirect URL in a new window
-                window.open(result.redirect_url, '_self');
-            } else {
-                // Show an alert message
-                alert('Не удалось создать ссылку на оплату. Проверьте пароль для прокси.');
-            }
-        } catch (error) {
-            // Show an alert message
-            alert('Не удалось создать ссылку на оплату. Проверьте пароль для прокси.');
-        } finally {
-            // Restore the original button text
-            topUpButton.innerHTML = originalText;
-        }
-    });
-
-    amountButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            amountInput.value = button.textContent.replace('₽', '');
-            const amount = parseInt(amountInput.value, 10);
-
-            // Validate amount
-            if (amount >= 10 && amount <= 9999) {
-                topUpButton.disabled = false;
-                topUpButton.style.background = '#4C4DDC';
-                topUpButton.style.cursor = 'pointer';
-            } else {
-                topUpButton.disabled = true;
-                topUpButton.style.background = '#ccc';
-                topUpButton.style.cursor = 'not-allowed';
-            }
+    try {
+        const response = await fetch('https://beneficiary-kd-api.icom24.ru/api/order/prepare/balance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Origin': 'https://oplata.volna39.ru',
+                'Referer': 'https://oplata.volna39.ru/',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15'
+            },
+            body: JSON.stringify({
+                cardId: currentCard.cardId,
+                amountCent: amount
+            })
         });
-    });
 
-    // Function to validate all input fields in the setup content
-    const validateSetupInputs = () => {
-        const isProxyPasswordValid = proxyPasswordInput.value.trim().length > 0;
-        const isCardNumberValid = /^\d{12}$/.test(cardNumberInput.value);
-        const isAccessTokenValid = accessTokenInput.value.trim().length > 120;
-        const isRefreshTokenValid = refreshTokenInput.value.trim().length > 120;
+        if (!response.ok) throw new Error('Ошибка при создании заказа');
 
-        if (isProxyPasswordValid && isCardNumberValid && isAccessTokenValid && isRefreshTokenValid) {
-            setDataButton.disabled = false;
-            setDataButton.style.background = '#4C4DDC';
-            setDataButton.style.cursor = 'pointer';
-        } else {
-            setDataButton.disabled = true;
-            setDataButton.style.background = '#ccc';
-            setDataButton.style.cursor = 'not-allowed';
+        const paymentData = await response.json();
+        showPaymentModal(paymentData);
+        closeModal();
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+function showPaymentModal(paymentData) {
+    const modal = document.getElementById('paymentModal');
+    const payButton = document.getElementById('payButton');
+    const timerElement = document.getElementById('paymentTimer');
+
+    // Устанавливаем данные оплаты
+    document.getElementById('paymentAmount').textContent = (paymentData.ttlMinutes * 60).amountCent / 100 + ' ₽';
+
+    // Таймер обратного отсчета
+    let timeLeft = paymentData.ttlMinutes * 60;
+    const timer = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            modal.style.display = 'none';
+            alert('Время на оплату истекло');
         }
+    }, 1000);
+
+    // Обработчик для кнопки оплаты
+    payButton.onclick = () => {
+        window.open(paymentData.url, '_blank');
+        clearInterval(timer);
+        modal.style.display = 'none';
     };
 
-    // Validate setup inputs on load
-    validateSetupInputs();
+    // Показываем модальное окно
+    modal.style.display = 'flex';
 
-    // Add event listeners to setup input fields for validation
-    [proxyPasswordInput, accessTokenInput, refreshTokenInput, cardNumberInput].forEach(input => {
-        input.addEventListener('input', validateSetupInputs);
-    });
-
-    // Restrict card number input to digits only
-    cardNumberInput.addEventListener('keypress', (e) => {
-        if (!/\d/.test(e.key)) {
-            e.preventDefault();
+    // Закрытие модального окна при клике вне его
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            clearInterval(timer);
+            modal.style.display = 'none';
         }
-    });
+    };
+}
 
-    // Store input data in localStorage and update tokens when "Set data" button is clicked
-    setDataButton.addEventListener('click', async () => {
-        setDataButton.textContent = "...";
-        const proxyPassword = proxyPasswordInput.value;
-        const accessToken = accessTokenInput.value;
-        const refreshToken = refreshTokenInput.value;
+function closeModal() {
+    document.getElementById('topUpModal').style.display = 'none';
+    selectedAmount = null;
+    document.getElementById('customAmount').value = '';
+    document.querySelectorAll('.amount-option').forEach(opt =>
+        opt.classList.remove('selected'));
+}
 
-        const proxyPasswordSuccess = await checkProxyPassword(proxyPassword);
-        if (proxyPasswordSuccess) {
-            localStorage.setItem('proxy-password', proxyPassword);
-            const success = await updateTokens(accessToken, refreshToken);
+// API взаимодействие
+async function fetchCardData(cardNumber, force = false) {
+    // try {
+    document.getElementById('balanceAmount').textContent = 'Загрузка...'
 
-            setDataButton.textContent = "Установить данные";
-            if (success) {
-                localStorage.setItem('card-number', cardNumberInput.value);
-                location.reload();
-            } else {
-                alert('Не удалось загрузить информацию. Проверьте токены.');
-            }
-        } else {
-            setDataButton.textContent = "Установить данные";
-            alert('Не удалось подключиться к серверу. Проверьте пароль для прокси.');
-        }
-    });
+    let cardData = JSON.parse(localStorage.getItem('cardData') || '{}');
+    const lastUpdate = cardData.lastUpdate;
 
-    // Copy card number to clipboard and alert when card is clicked
-    cardElement.addEventListener('click', () => {
-        const cardNumber = localStorage.getItem('card-number');
-        if (cardNumber) {
-            navigator.clipboard.writeText(cardNumber).then(() => {
-                alert(`Номер карты: ${cardNumber}`);
-            });
-        } else {
-            alert('Номер карты не найден.');
-        }
-    });
+    if (lastUpdate && !force) {
+        const diff = Date.now() - lastUpdate;
+        if (diff < 1000 * 60 * 60 * 24) {
+            document.getElementById('balanceAmount').textContent = (cardData.data.balanceAmountCent / 100).toFixed(2) + ' ₽';
 
-    // Perform balance refresh on page load
-    if (startMode === 1) {
-        const lastBalanceUpdate = parseInt(localStorage.getItem('last-balance-update'), 10);
-        const lastBalance = localStorage.getItem('last-balance');
-        const oneHour = 3600;
-
-        if (!lastBalance || !lastBalanceUpdate || (getTimestamp() - lastBalanceUpdate > oneHour)) {
-            refreshBalance();
-        } else {
-            balanceAmount.textContent = lastBalance + '₽';
+            renderHistory(cardData.data.tripHistory, 'tripsHistory', true);
+            renderHistory(cardData.data.orderHistory, 'operationsHistory', false);
+            return;
         }
     }
+
+    const response = await fetch(`https://beneficiary-kd-api.icom24.ru/api/card/information?cardNumber=${cardNumber}`, {
+        headers: {
+            'Accept': 'application/json',
+            'Origin': 'https://oplata.volna39.ru',
+            'Referer': 'https://oplata.volna39.ru/'
+        }
+    });
+
+    let data = await response.json();
+    currentCard = data;
+
+    document.getElementById('balanceAmount').textContent =
+        (data.balanceAmountCent / 100).toFixed(2) + ' ₽';
+
+    cardData = {
+        data: data,
+        lastUpdate: Date.now()
+    }
+    localStorage.setItem('cardData', JSON.stringify(cardData));
+
+    renderHistory(data.tripHistory, 'tripsHistory', true);
+    renderHistory(data.orderHistory, 'operationsHistory', false);
+
+    return data;
+    // } catch(error) {
+    //     alert('Ошибка обновления: ' + error.message);
+    // }
+}
+
+// Обработчики событий
+document.getElementById('editBtn').addEventListener('click', () => {
+    const input = document.getElementById('cardNumber');
+    if(input.disabled) {
+        toggleEditButton(false);
+    } else {
+        saveCard();
+    }
 });
+
+document.querySelector('.modal').addEventListener('click', e => {
+    if(e.target === document.querySelector('.modal')) closeModal();
+});
+
+function selectAmount(amount) {
+    const customAmount = document.getElementById('customAmount');
+    selectedAmount = amount;
+    customAmount.value = amount / 100;
+    customAmount.focus();
+
+    document.querySelectorAll('.amount-option').forEach((opt) =>
+        opt.classList.toggle('selected', opt.dataset.amount === amount)
+    );
+}
+
+document.getElementById("BalanceHeader").addEventListener("click", async () => {
+    await refreshBalance(true);
+});
+
+// Запуск приложения
+init();
