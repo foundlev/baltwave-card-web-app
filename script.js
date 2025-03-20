@@ -210,12 +210,27 @@ async function fetchCardData(cardNumber, force = false) {
         }
     }
 
-    const response = await fetch(`https://beneficiary-kd-api.icom24.ru/api/card/information?cardNumber=${cardNumber}`, {
+    // Сформируй тело запроса
+    const payload = JSON.stringify({ cardNumber: cardNumber });
+
+    // Замени существующий fetch на следующий вариант:
+    const response = await fetch('https://beneficiary-kd-api.icom24.ru/api/card/check', {
+        method: 'POST',
         headers: {
+            'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'Sec-Fetch-Site': 'cross-site',
+            'Accept-Language': 'ru',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Sec-Fetch-Mode': 'cors',
             'Origin': 'https://oplata.volna39.ru',
-            'Referer': 'https://oplata.volna39.ru/'
-        }
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15',
+            'Referer': 'https://oplata.volna39.ru/',
+            'Content-Length': '29',
+            'Sec-Fetch-Dest': 'empty',
+            'Priority': 'u=3, i'
+        },
+        body: payload
     });
 
     let data = await response.json();
